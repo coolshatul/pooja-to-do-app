@@ -17,6 +17,24 @@ function App() {
   const [shareModal, setShareModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
+
+  // PWA Install Prompt State
+  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+
+  // Listen for beforeinstallprompt event
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallPrompt(true);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
   // Check for shared list on app load
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -327,6 +345,32 @@ function App() {
             >
               <Trash2 className="w-4 h-4" />
               Clear All Items
+            </button>
+          </div>
+        )}
+
+        {/* Install PWA Prompt */}
+        {showInstallPrompt && (
+          <div className="text-center mb-6">
+            <button
+              className="px-6 py-3 bg-gradient-to-r from-orange-400 to-yellow-500 hover:from-orange-500 hover:to-yellow-600 text-white rounded-xl shadow-md transition-all duration-300"
+              onClick={async () => {
+                if (deferredPrompt) {
+                  // @ts-ignore
+                  deferredPrompt.prompt();
+                  // @ts-ignore
+                  const { outcome } = await deferredPrompt.userChoice;
+                  if (outcome === 'accepted') {
+                    console.log('User accepted install');
+                  } else {
+                    console.log('User dismissed install');
+                  }
+                  setDeferredPrompt(null);
+                  setShowInstallPrompt(false);
+                }
+              }}
+            >
+              🛕 Install Pooja App
             </button>
           </div>
         )}
