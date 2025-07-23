@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { PoojaList, PoojaItem } from '../types';
+import { PoojaList } from '../types';
 
 export class PoojaListAPI {
   static async createList(list: Omit<PoojaList, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
@@ -67,24 +67,13 @@ export class PoojaListAPI {
     try {
       const { data, error } = await supabase
         .from('pooja_lists')
-        .select('*')
+        .select('id, title, items, owner_id, owner_name, owner_email, created_at, updated_at, is_public, share_code')
         .eq('owner_id', userId)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
 
-      return data.map(item => ({
-        id: item.id,
-        title: item.title,
-        items: item.items,
-        ownerId: item.owner_id,
-        ownerName: item.owner_name,
-        ownerEmail: item.owner_email,
-        createdAt: new Date(item.created_at),
-        updatedAt: new Date(item.updated_at),
-        isPublic: item.is_public,
-        shareCode: item.share_code,
-      }));
+      return data.map(this.transformListData);
     } catch (error) {
       console.error('Error fetching user lists:', error);
       throw error;
@@ -95,7 +84,7 @@ export class PoojaListAPI {
     try {
       const { data, error } = await supabase
         .from('pooja_lists')
-        .select('*')
+        .select('id, title, items, owner_id, owner_name, owner_email, created_at, updated_at, is_public, share_code')
         .eq('share_code', shareCode)
         .eq('is_public', true)
         .single();
@@ -105,18 +94,7 @@ export class PoojaListAPI {
         throw error;
       }
 
-      return {
-        id: data.id,
-        title: data.title,
-        items: data.items,
-        ownerId: data.owner_id,
-        ownerName: data.owner_name,
-        ownerEmail: data.owner_email,
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at),
-        isPublic: data.is_public,
-        shareCode: data.share_code,
-      };
+      return this.transformListData(data);
     } catch (error) {
       console.error('Error fetching list by share code:', error);
       throw error;
@@ -127,7 +105,7 @@ export class PoojaListAPI {
     try {
       const { data, error } = await supabase
         .from('pooja_lists')
-        .select('*')
+        .select('id, title, items, owner_id, owner_name, owner_email, created_at, updated_at, is_public, share_code')
         .eq('id', listId)
         .single();
 
@@ -136,22 +114,26 @@ export class PoojaListAPI {
         throw error;
       }
 
-      return {
-        id: data.id,
-        title: data.title,
-        items: data.items,
-        ownerId: data.owner_id,
-        ownerName: data.owner_name,
-        ownerEmail: data.owner_email,
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at),
-        isPublic: data.is_public,
-        shareCode: data.share_code,
-      };
+      return this.transformListData(data);
     } catch (error) {
       console.error('Error fetching list:', error);
       throw error;
     }
+  }
+
+  private static transformListData(item: any): PoojaList {
+    return {
+      id: item.id,
+      title: item.title,
+      items: item.items,
+      ownerId: item.owner_id,
+      ownerName: item.owner_name,
+      ownerEmail: item.owner_email,
+      createdAt: new Date(item.created_at),
+      updatedAt: new Date(item.updated_at),
+      isPublic: item.is_public,
+      shareCode: item.share_code,
+    };
   }
 
   static generateShareCode(): string {
