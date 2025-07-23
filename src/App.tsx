@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Plus, Trash2, X, ArrowLeft, Save, List } from 'lucide-react';
+import { Flame, Plus, Trash2, X, ArrowLeft, Save, List, Share2 } from 'lucide-react';
 import { PoojaItem, PoojaList } from './types';
 import { useAuth } from './hooks/useAuth';
 import { AuthButton } from './components/AuthButton';
@@ -16,6 +16,9 @@ function App() {
   const [showMyLists, setShowMyLists] = useState(false);
   const [shareModal, setShareModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  // Track if localStorage items have been loaded
+  const [localItemsLoaded, setLocalItemsLoaded] = useState(false);
 
 
   // PWA Install Prompt State
@@ -37,6 +40,7 @@ function App() {
 
   // Check for shared list on app load
   useEffect(() => {
+    if (typeof user === 'undefined') return;
     const urlParams = new URLSearchParams(window.location.search);
     const shareCode = urlParams.get('share');
 
@@ -45,20 +49,27 @@ function App() {
     } else {
       // Load from localStorage for non-authenticated users
       if (!user) {
-        const savedItems = localStorage.getItem('poojaItems');
-        if (savedItems) {
-          setItems(JSON.parse(savedItems));
+        const savedData = localStorage.getItem('poojaList');
+
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          setItems(parsed.items || []);
+          setListTitle(parsed.title || 'My Pooja Checklist');
         }
+        setLocalItemsLoaded(true); // ✅ mark as loaded, even if nothing found
       }
     }
-  }, [user]);
+  }, [user !== undefined]);
 
-  // Save to localStorage for non-authenticated users
+  // Save to localStorage for non-authenticated users, only after loaded
   useEffect(() => {
-    if (!user && !currentList) {
-      localStorage.setItem('poojaItems', JSON.stringify(items));
+    if (!user && !currentList && localItemsLoaded) {
+      localStorage.setItem('poojaList', JSON.stringify({
+        items,
+        title: listTitle,
+      }));
     }
-  }, [items, user, currentList]);
+  }, [items, listTitle, user, currentList, localItemsLoaded]);
 
   const loadSharedList = async (shareCode: string) => {
     try {
@@ -249,7 +260,7 @@ function App() {
               onClick={() => setShareModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
             >
-              <X className="w-4 h-4" />
+              <Share2 className="w-4 h-4" />
               Share
             </button>
           </div>
@@ -299,12 +310,22 @@ function App() {
                     </svg>
                   )}
                 </button>
-                <span
-                  className={`flex-1 text-orange-900 transition-all duration-300 ${item.completed ? 'line-through text-green-600' : ''
+                <input
+                  type="text"
+                  value={item.text}
+                  onChange={(e) => {
+                    const updatedItems = items.map(i =>
+                      i.id === item.id ? { ...i, text: e.target.value } : i
+                    );
+                    setItems(updatedItems);
+                  }}
+                  onBlur={() => {
+                    // Optional: could persist here if desired, or just leave for Save button
+                  }}
+                  className={`flex-1 bg-transparent border-none outline-none text-orange-900 transition-all duration-300 ${item.completed ? 'line-through text-green-600' : ''
                     }`}
-                >
-                  {item.text}
-                </span>
+                  disabled={!!isSharedList}
+                />
                 {!isSharedList && (
                   <button
                     onClick={() => deleteItem(item.id)}
@@ -338,14 +359,41 @@ function App() {
 
         {/* Clear All Button */}
         {items.length > 0 && !isSharedList && (
-          <div className="text-center">
+          <div className="text-center mb-4">
             <button
-              onClick={clearAll}
+              onClick={() => setShowClearConfirm(true)}
               className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
             >
               <Trash2 className="w-4 h-4" />
               Clear All Items
             </button>
+          </div>
+        )}
+
+        {/* Clear All Confirmation Modal */}
+        {showClearConfirm && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full text-center">
+              <h2 className="text-lg font-semibold text-orange-800 mb-4">Clear All Items?</h2>
+              <p className="text-sm text-orange-600 mb-6">Are you sure you want to remove all pooja items from this list?</p>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => {
+                    clearAll();
+                    setShowClearConfirm(false);
+                  }}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg"
+                >
+                  Yes, Clear
+                </button>
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-orange-800 rounded-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
