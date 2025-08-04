@@ -8,6 +8,9 @@ import { ShareModal } from './components/ShareModal';
 import { PoojaListAPI } from './services/api';
 
 function App() {
+  const isSupabaseDisabled = import.meta.env.VITE_SUPABASE_DISABLED === 'true';
+  // Simulate Supabase down state (for future extensibility, as per notice)
+  const isSupabaseDown = false;
   const { user } = useAuth();
   const [currentList, setCurrentList] = useState<PoojaList | null>(null);
   const [items, setItems] = useState<PoojaItem[]>([]);
@@ -188,7 +191,7 @@ function App() {
               <ArrowLeft className="w-4 h-4 text-orange-600" />
               <span className="text-orange-800">Back</span>
             </button>
-            <AuthButton />
+            <AuthButton disabled={isSupabaseDisabled} />
           </div>
           <MyLists onSelectList={selectList} onCreateNew={createNewList} />
         </div>
@@ -214,7 +217,7 @@ function App() {
               <Flame className="w-6 h-6 text-white animate-pulse" />
             </div>
           </div>
-          <AuthButton />
+          <AuthButton disabled={isSupabaseDisabled} />
         </div>
 
         {/* Title */}
@@ -428,6 +431,13 @@ function App() {
           <p className="text-xs text-orange-500">
             May your pooja bring peace and blessings 🙏
           </p>
+          {(isSupabaseDisabled || isSupabaseDown) && (
+            <div className="mt-4 px-4 py-3 bg-orange-100 border border-orange-300 rounded-lg text-xs text-orange-800 shadow-sm max-w-md mx-auto">
+              <strong className="block mb-1 font-semibold">Limited Online Features</strong>
+              Online sync and Google login are currently disabled due to cost constraints.
+              You can still use all features locally — your checklist will be saved in your browser. 🙏
+            </div>
+          )}
         </div>
 
         {/* Share Modal */}

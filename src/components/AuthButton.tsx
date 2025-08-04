@@ -2,7 +2,11 @@ import React from 'react';
 import { LogIn, LogOut, User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
-export const AuthButton: React.FC = () => {
+interface AuthButtonProps {
+  disabled?: boolean;
+}
+
+export const AuthButton: React.FC<AuthButtonProps> = ({ disabled }) => {
   const { user, signInWithGoogle, logout, loading } = useAuth();
 
   if (loading) {
@@ -19,8 +23,8 @@ export const AuthButton: React.FC = () => {
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 px-3 py-2 bg-white/80 backdrop-blur-sm rounded-lg">
           {user.avatar ? (
-            <img 
-              src={user.avatar} 
+            <img
+              src={user.avatar}
               alt={user.name}
               className="w-6 h-6 rounded-full"
             />
@@ -45,7 +49,9 @@ export const AuthButton: React.FC = () => {
   return (
     <button
       onClick={signInWithGoogle}
-      className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg border border-gray-300 transition-all duration-300 shadow-md hover:shadow-lg"
+      disabled={disabled}
+      title={disabled ? "Button is disabled" : undefined}
+      className={`flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg border border-gray-300 transition-all duration-300 shadow-md hover:shadow-lg ${disabled ? 'cursor-not-allowed opacity-50 hover:bg-white' : ''}`}
     >
       <LogIn className="w-4 h-4" />
       <span className="text-sm font-medium">Sign in with Google</span>
